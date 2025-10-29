@@ -10,15 +10,18 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { hashPassword, verifyPassword } from './utils/password.utils';
 import { SignInDto } from './dto/signIn.dto';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import type { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
-  async signUp(dto: CreateUserDto) {
+  async signUp(dto: CreateUserDto): Promise<{ message: string }> {
     if (!dto)
       throw new BadRequestException({
         message: 'You can not summit an empty form',
@@ -33,7 +36,7 @@ export class AuthService {
         statusCode: 'E1001A',
       });
 
-    const ExistingUser = await this.prisma.user.findFirst({
+    const ExistingUser: User | null = await this.prisma.user.findFirst({
       where: { email: dto.email },
     });
 
@@ -57,7 +60,24 @@ export class AuthService {
     return { message: 'User created successfully' };
   }
 
-  async signIn(dto: SignInDto) {
+  private generateTokens(payload: { id: string; email: string }): Tokens {
+    const access_token: string = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET_KEY'),
+      expiresIn: '15m', // access token expires in 15 minutes
+    });
+
+    const refresh_token: string = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      expiresIn: '7d', // refresh token expires in 7 days
+    });
+
+    return {
+      access_token,
+      refresh_token,
+    };
+  }
+
+  async signIn(dto: SignInDto): Promise<AuthSignInResponse> {
     if (!dto)
       throw new BadRequestException({
         message: 'You can not summit an empty form',
@@ -72,7 +92,7 @@ export class AuthService {
         statusCode: 'E1001A',
       });
 
-    const user = await this.prisma.user.findFirst({
+    const user: User | null = await this.prisma.user.findFirst({
       where: {
         email: dto.email.toLocaleLowerCase().trim(),
       },
@@ -85,7 +105,7 @@ export class AuthService {
         statusCode: 'N0404',
       });
 
-    const unhashedPassword = await verifyPassword(
+    const unhashedPassword: boolean = await verifyPassword(
       user.passwordHash,
       dto.password,
     );
@@ -97,12 +117,50 @@ export class AuthService {
         statusCode: 'U1001',
       });
 
-    return {
-      access_token: this.jwtService.sign({ id: user.id, email: user.email }),
+    const tokens = this.generateTokens({ id: user.id, email: user.email });
+
+    const safeUser: AuthUser = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
     };
+
+    return { ...tokens, user: safeUser };
   }
 
-  async forgotPassword(email: string, password: string) {
+  async refreshTokens(refresh_token: string): Promise<Tokens> {
+    try {
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(
+        refresh_token,
+        {
+          secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        },
+      );
+
+      // Verify that the user still exists
+      const user: User | null = await this.prisma.user.findUnique({
+        where: { id: payload.id },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User no longer exists');
+      }
+
+      // Generate new tokens
+      return this.generateTokens({
+        id: payload.id,
+        email: payload.email,
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  async forgotPassword(
+    email: string,
+    password: string,
+  ): Promise<{ message: string }> {
     if (!email)
       throw new BadRequestException({
         message: 'You can not summit an empty form',
@@ -110,7 +168,7 @@ export class AuthService {
         statusCode: 'E1001',
       });
 
-    const user = await this.prisma.user.findUnique({
+    const user: User | null = await this.prisma.user.findUnique({
       where: { email: email.toLocaleLowerCase().trim() },
     });
     if (!user)
@@ -120,7 +178,10 @@ export class AuthService {
         statusCode: 'N0404',
       });
 
-    const samePassword = await verifyPassword(user?.passwordHash, password);
+    const samePassword: boolean = await verifyPassword(
+      user.passwordHash,
+      password,
+    );
 
     if (samePassword)
       throw new ForbiddenException({
@@ -139,4 +200,27 @@ export class AuthService {
     });
     return { message: 'Password reset successful' };
   }
+}
+
+interface Tokens {
+  access_token: string;
+  refresh_token: string;
+}
+
+interface JwtPayload {
+  id: string;
+  email: string;
+  iat?: number;
+  exp?: number;
+}
+
+interface AuthUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface AuthSignInResponse extends Tokens {
+  user: AuthUser;
 }
