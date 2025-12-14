@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -41,7 +42,7 @@ export class AuthService {
     });
 
     if (ExistingUser)
-      throw new BadRequestException({
+      throw new ConflictException({
         message: 'User with this email already exists',
         error: 'USER_ALREADY_EXISTS',
         statusCode: 'E1002',
@@ -78,20 +79,6 @@ export class AuthService {
   }
 
   async signIn(dto: SignInDto): Promise<AuthSignInResponse> {
-    if (!dto)
-      throw new BadRequestException({
-        message: 'You can not summit an empty form',
-        error: 'EMPTY_FORM',
-        statusCode: 'E1001',
-      });
-
-    if (!dto.email || !dto.password)
-      throw new BadRequestException({
-        message: 'You must fill all the required form fields',
-        error: 'PARTIAL_DATA_INPUT',
-        statusCode: 'E1001A',
-      });
-
     const user: User | null = await this.prisma.user.findFirst({
       where: {
         email: dto.email.toLocaleLowerCase().trim(),
@@ -99,9 +86,9 @@ export class AuthService {
     });
 
     if (!user)
-      throw new NotFoundException({
-        message: 'Not user exists with such credentials',
-        error: 'USER_NOT_FOUND',
+      throw new UnauthorizedException({
+        message: 'Invalid email or password',
+        error: 'INVALID_CREDENTIALS',
         statusCode: 'N0404',
       });
 

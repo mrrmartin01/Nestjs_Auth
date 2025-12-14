@@ -46,10 +46,20 @@ describe('AppController (e2e)', () => {
     };
     const signInDto: SignInDto = {
       email: 'testUser@example.app',
-      password: 'IamSpiderMan1!',
+      password: 'IamSpiderMan!1',
+    };
+    const weakPasswordSignUpDto: CreateUserDto = {
+      email: 'weakpass@test.app',
+      password: 'password123',
+      firstName: 'Weak',
+      lastName: 'Password',
+    };
+    const nonExistingUserSignInDto: SignInDto = {
+      email: 'fakeuser@test.app',
+      password: 'SomePassword!1',
     };
 
-    describe('signUp', () => {
+    describe('POST /auth/signup', () => {
       it('should throw if form is empty', () => {
         return pactum
           .spec()
@@ -80,6 +90,13 @@ describe('AppController (e2e)', () => {
           })
           .expectStatus(400);
       });
+      it('should throw if password is weak', () => {
+        return pactum
+          .spec()
+          .post('/auth/signup')
+          .withBody(weakPasswordSignUpDto)
+          .expectStatus(400);
+      });
       it('should pass signup', () => {
         return pactum
           .spec()
@@ -92,10 +109,10 @@ describe('AppController (e2e)', () => {
           .spec()
           .post('/auth/signup')
           .withBody(signupDto)
-          .expectStatus(400);
+          .expectStatus(409);
       });
     });
-    describe('SignIn', () => {
+    describe('POST /auth/signin', () => {
       it('should throw if form is empty', () => {
         return pactum
           .spec()
@@ -104,14 +121,48 @@ describe('AppController (e2e)', () => {
           .expectStatus(400);
       });
       it('should throw if email is missing', () => {
-        return pactum.spec().post('/auth/signin').withBody({
-          password: signInDto.password,
-        });
+        return pactum
+          .spec()
+          .post('/auth/signin')
+          .withBody({ password: signInDto.password })
+          .expectStatus(400);
       });
+
       it('should throw if password is missing', () => {
-        return pactum.spec().post('/auth/signin').withBody({
-          email: signInDto.email,
-        });
+        return pactum
+          .spec()
+          .post('/auth/signin')
+          .withBody({ email: signInDto.email })
+          .expectStatus(400);
+      });
+      it('should throw if credentials are invalid', () => {
+        return pactum
+          .spec()
+          .post('/auth/signin')
+          .withBody({
+            email: nonExistingUserSignInDto.email,
+            password: nonExistingUserSignInDto.password,
+          })
+          .expectStatus(401);
+      });
+      it('should signin successfully', () => {
+        return pactum
+          .spec()
+          .post('/auth/signin')
+          .withBody(signInDto)
+          .expectStatus(200);
+      });
+    });
+    describe('POST /auth/refresh', () => {
+      it('should throw if no refresh token is provided', () => {
+        return pactum.spec().post('/auth/refresh').expectStatus(401);
+      });
+      it('should refresh tokens', () => {
+        return pactum
+          .spec()
+          .post('/auth/refresh')
+          .withCookies({})
+          .expectStatus(200);
       });
     });
   });

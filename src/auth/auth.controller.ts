@@ -25,6 +25,7 @@ export class AuthController {
     return this.authService.signUp(dto);
   }
 
+  @HttpCode(HttpStatus.OK)
   @Post('signin')
   async signIn(
     @Body() dto: SignInDto,
@@ -63,9 +64,7 @@ export class AuthController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const refresh_token = request.cookies['refresh_token'] as
-      | string
-      | undefined;
+    const refresh_token = request.cookies?.refresh_token as string | undefined;
     if (!refresh_token) {
       throw new UnauthorizedException('Refresh token not found');
     }
