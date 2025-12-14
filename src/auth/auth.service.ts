@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { hashPassword, verifyPassword } from './utils/password.utils';
 import { SignInDto } from './dto/signIn.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -36,8 +36,8 @@ export class AuthService {
         statusCode: 'E1001A',
       });
 
-    const ExistingUser: User | null = await this.prisma.user.findFirst({
-      where: { email: dto.email },
+    const ExistingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email.toLowerCase().trim() },
     });
 
     if (ExistingUser)

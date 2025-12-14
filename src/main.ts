@@ -9,8 +9,10 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.use(CookieParser());
   const config = new DocumentBuilder()
-    .setTitle('Tickets API')
-    .setDescription('API for tickets booking application')
+    .setTitle('Nestjs-Prisma-Auth API')
+    .setDescription(
+      'NestJS API with Prisma, Docker, and cookie-based authentication',
+    )
     .setVersion('1.0')
     .build();
 

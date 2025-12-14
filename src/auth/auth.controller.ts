@@ -19,7 +19,7 @@ import { ApiTags } from '@nestjs/swagger';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
   @Post('signup')
   signUp(@Body() dto: CreateUserDto) {
     return this.authService.signUp(dto);
