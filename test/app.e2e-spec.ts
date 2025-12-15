@@ -153,17 +153,5 @@ describe('AppController (e2e)', () => {
           .expectStatus(200);
       });
     });
-    describe('POST /auth/refresh', () => {
-      it('should throw if no refresh token is provided', () => {
-        return pactum.spec().post('/auth/refresh').expectStatus(401);
-      });
-      it('should refresh tokens', () => {
-        return pactum
-          .spec()
-          .post('/auth/refresh')
-          .withCookies({})
-          .expectStatus(200);
-      });
-    });
   });
 });

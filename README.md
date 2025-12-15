@@ -43,6 +43,7 @@
 *   [Configuration](#configuration)
 *   [Database Schema](#database-schema)
 *   [API Reference](#api-reference)
+*   [Screenshots](#screenshots)
 *   [Tech Stack](#tech-stack)
 *   [Contributing](#contributing)
 *   [License](#license)
@@ -307,6 +308,11 @@ The API provides endpoints for user authentication and basic user management. Al
 | `PATCH`| `/users/me`  | Updates the profile of the authenticated user.   | `JWT Bearer`   | `200 OK`        | `User` object (without hash) |
 
 **Note**: All authenticated endpoints require a valid JWT in an `HttpOnly` cookie. The Swagger UI can handle this automatically after a successful `signIn`.
+
+## Screenshots
+### Screenshot 1: Swagger API Testing
+
+### e2e Test Running
 
 ## Tech Stack
 
