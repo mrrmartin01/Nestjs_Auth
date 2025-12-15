@@ -310,9 +310,8 @@ The API provides endpoints for user authentication and basic user management. Al
 **Note**: All authenticated endpoints require a valid JWT in an `HttpOnly` cookie. The Swagger UI can handle this automatically after a successful `signIn`.
 
 ## Screenshots
-### Screenshot 1: Swagger API Testing
-
-### e2e Test Running
+### e2e Test Running  
+<img width="603" height="481" alt="image" src="https://github.com/user-attachments/assets/3bd06631-626e-496f-8f78-060131d15b6d" />
 
 ## Tech Stack
 
